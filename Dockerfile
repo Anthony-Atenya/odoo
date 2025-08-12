@@ -1,4 +1,5 @@
-FROM python:3.10-slim
+FROM --platform=linux/amd64 python:3.10-slim
+
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -11,9 +12,11 @@ RUN apt-get update && apt-get install -y \
     nodejs npm \
  && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Install wkhtmltopdf (for reports)
+# Install wkhtmltopdf (patched Qt build)
 RUN wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.bionic_amd64.deb \
- && apt-get update && apt-get install -y ./wkhtmltox_0.12.6-1.bionic_amd64.deb \
+ && apt-get update \
+ && apt-get install -y fontconfig libxrender1 libxext6 libfontconfig1 libfreetype6 libpng16-16 libjpeg62-turbo xfonts-base xfonts-75dpi \
+ && apt-get install -y ./wkhtmltox_0.12.6-1.bionic_amd64.deb \
  && rm wkhtmltox_0.12.6-1.bionic_amd64.deb
 
 # Copy Odoo source

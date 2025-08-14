@@ -11,12 +11,13 @@ RUN set -eux; \
       wget ca-certificates fontconfig libxrender1 libxext6 libfreetype6 \
       libjpeg62-turbo libpng16-16 xfonts-base xfonts-75dpi gnupg; \
     ARCH="$(dpkg --print-architecture)"; \
-    DEB="wkhtmltox_0.12.6.1-3.bookworm_${ARCH}.deb"; \
-    wget -O /tmp/${DEB} \
-      "https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/${DEB}"; \
-    apt-get install -y --no-install-recommends /tmp/${DEB}; \
-    rm -f /tmp/${DEB}; \
+    DEB="wkhtmltox_0.12.6.1-1.bookworm_${ARCH}.deb"; \
+    wget -O /tmp/wkhtmltox.deb \
+      "https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6.1/${DEB}"; \
+    apt-get install -y --no-install-recommends /tmp/wkhtmltox.deb; \
+    rm -f /tmp/wkhtmltox.deb; \
     apt-get clean; rm -rf /var/lib/apt/lists/*
+
 
 # Copy Odoo config and optional Python deps
 COPY odoo.conf /etc/odoo/odoo.conf

@@ -1,42 +1,35 @@
-FROM python:3.10-slim
+# Odoo 18 base image
+FROM odoo:18.0
 
+USER root
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    wget curl git \
-    python3-dev libxml2-dev libxslt1-dev zlib1g-dev \
-    libsasl2-dev libldap2-dev libssl-dev libffi-dev \
-    libjpeg-dev libpq-dev \
-    xfonts-75dpi xfonts-base \
-    nodejs npm \
- && apt-get clean && rm -rf /var/lib/apt/lists/*
+# Install wkhtmltopdf (patched Qt) + fonts and deps for PDFs
+# Use Bookworm builds (Debian 12) from wkhtmltopdf's official packaging releases.
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+      wget ca-certificates fontconfig libxrender1 libxext6 libfreetype6 \
+      libjpeg62-turbo libpng16-16 xfonts-base xfonts-75dpi gnupg; \
+    ARCH="$(dpkg --print-architecture)"; \
+    DEB="wkhtmltox_0.12.6.1-3.bookworm_${ARCH}.deb"; \
+    wget -O /tmp/${DEB} \
+      "https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/${DEB}"; \
+    apt-get install -y --no-install-recommends /tmp/${DEB}; \
+    rm -f /tmp/${DEB}; \
+    apt-get clean; rm -rf /var/lib/apt/lists/*
 
-# Make sure we have apt utils
-RUN apt-get update && apt-get install -y \
-    wkhtmltopdf \
-    fontconfig \
-    libxrender1 \
-    libxext6 \
-    libfontconfig1 \
-    libfreetype6 \
-    libpng16-16 \
-    libjpeg62-turbo \
-    xfonts-base \
-    xfonts-75dpi \
- && rm -rf /var/lib/apt/lists/*
+# Copy Odoo config and optional Python deps
+COPY odoo.conf /etc/odoo/odoo.conf
+RUN chown odoo:odoo /etc/odoo/odoo.conf && chmod 640 /etc/odoo/odoo.conf
 
-# Copy Odoo source
-COPY . /odoo
-WORKDIR /odoo
+COPY requirements.txt /tmp/requirements.txt
+RUN pip3 install --no-cache-dir -r /tmp/requirements.txt && rm /tmp/requirements.txt
 
-# Install Python dependencies
-RUN pip install --upgrade pip && pip install -r requirements.txt
-
-# Create odoo user
-RUN useradd -ms /bin/bash odoo
-USER odoo
-
+# Render will set $PORT; Odoo default is 8069, we'll override at runtime
+ENV PORT=8069
 EXPOSE 8069
 
-CMD ["python3", "odoo-bin", "-c", "/odoo.conf"]
+USER odoo
+
+# Start Odoo with our config; DB/port are provided via CLI flags in Render Start Command
+CMD ["odoo", "-c", "/etc/odoo/odoo.conf"]

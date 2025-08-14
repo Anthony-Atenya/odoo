@@ -23,6 +23,16 @@ registry.category("web_tour.tours").add("ProductScreenTour", {
             // Go by default to home category
 
             Chrome.startPoS(),
+            // Make sure we don't have any scroll bar on the product list
+            {
+                trigger: ".product-list",
+                run: function () {
+                    const productList = document.querySelector(".product-list");
+                    if (productList.scrollWidth > document.documentElement.scrollWidth) {
+                        throw new Error("Product list is overflowing");
+                    }
+                },
+            },
             ProductScreen.clickDisplayedProduct("Desk Organizer", true, "1.0", "5.10"),
             ProductScreen.clickDisplayedProduct("Desk Organizer", true, "2.0", "10.20"),
             ProductScreen.clickDisplayedProduct("Letter Tray", true, "1.0", "5.28"),
@@ -168,6 +178,27 @@ registry.category("web_tour.tours").add("FloatingOrderTour", {
             ProductScreen.isShown(),
             ProductScreen.selectFloatingOrder(1),
             ProductScreen.productCardQtyIs("Letter Tray", "2.0"),
+        ].flat(),
+});
+
+registry.category("web_tour.tours").add("test_reuse_empty_floating_order", {
+    steps: () =>
+        [
+            Chrome.startPoS(),
+            Dialog.confirm("Open Register"),
+            ProductScreen.orderIsEmpty(),
+            ProductScreen.checkFloatingOrderCount(1),
+            ProductScreen.clickDisplayedProduct("Desk Organizer", true, "1.0", "5.10"),
+            Chrome.createFloatingOrder(),
+            ProductScreen.checkFloatingOrderCount(2),
+            ProductScreen.selectFloatingOrder(0),
+            ProductScreen.clickPayButton(),
+            PaymentScreen.clickPaymentMethod("Bank", true, { remaining: "0.00" }),
+            PaymentScreen.clickValidate(),
+            ReceiptScreen.isShown(),
+            ReceiptScreen.clickNextOrder(),
+            // Should reuse previously created empty floating order
+            ProductScreen.checkFloatingOrderCount(1),
         ].flat(),
 });
 
@@ -657,6 +688,26 @@ registry.category("web_tour.tours").add("test_barcode_search_attributes_preset",
                 "1.0"
             ),
 
+            Chrome.endTour(),
+        ].flat(),
+});
+
+registry.category("web_tour.tours").add("test_pos_ui_round_globally", {
+    steps: () =>
+        [
+            Chrome.startPoS(),
+            Dialog.confirm("Open Register"),
+            ProductScreen.clickDisplayedProduct("Test Product 1"),
+            ProductScreen.clickDisplayedProduct("Test Product 2"),
+            inLeftSide([
+                ...["+/-"].map(Numpad.click),
+                ...ProductScreen.selectedOrderlineHasDirect("Test Product 2", "-1.0"),
+            ]),
+            ProductScreen.totalAmountIs("7,771.01"),
+            ProductScreen.clickPayButton(),
+            PaymentScreen.clickPaymentMethod("Bank"),
+            PaymentScreen.clickValidate(),
+            ReceiptScreen.isShown(),
             Chrome.endTour(),
         ].flat(),
 });
